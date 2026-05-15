@@ -1,0 +1,78 @@
+name: Codex Task
+description: A scoped implementation task for Codex
+title: "[Codex]: "
+labels: ["codex-ready"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What should Codex know before starting?
+      placeholder: |
+        Read AGENTS.md and docs/gameplay-rules.md.
+        This task belongs to Milestone 1: hardcoded playable frontend.
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true after this task?
+      placeholder: |
+        Build the tile selection UI for the Link Grid puzzle.
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: Specific implementation requirements
+      placeholder: |
+        - Render puzzle tiles in a responsive grid.
+        - Allow selecting/deselecting tiles.
+        - Limit selection to the group size.
+        - Use Tailwind styling.
+        - Keep domain logic separate from presentational components.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What should Codex explicitly not do?
+      placeholder: |
+        - Do not add backend calls.
+        - Do not add auth.
+        - Do not add AI generation.
+        - Do not introduce new dependencies unless justified.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know this is done?
+      placeholder: |
+        - pnpm typecheck passes.
+        - pnpm lint passes if configured.
+        - User can select and deselect tiles.
+        - User cannot select more than the group size.
+        - No unrelated files changed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-plan
+    attributes:
+      label: Test plan
+      description: What should Codex run or verify?
+      placeholder: |
+        - Run pnpm typecheck.
+        - Run pnpm lint.
+        - Manually verify tile selection in the browser.
+    validations:
+      required: true
