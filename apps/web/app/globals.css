@@ -23,7 +23,6 @@ body {
     var(--background);
   color: var(--foreground);
   font-family:
-    var(--font-geist-sans),
     ui-sans-serif,
     system-ui,
     -apple-system,
