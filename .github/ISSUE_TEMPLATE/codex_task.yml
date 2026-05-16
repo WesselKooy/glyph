@@ -1,7 +1,7 @@
 name: Codex Task
 description: A scoped implementation task for Codex
 title: "[Codex]: "
-labels: ["codex-ready"]
+labels: ["needs-spec"]
 body:
   - type: textarea
     id: context

@@ -1,0 +1,11 @@
+{
+  "name": "glyph",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "tickets:create": "node scripts/create-issues.mjs",
+    "typecheck": "pnpm -r --if-present typecheck"
+  }
+}
