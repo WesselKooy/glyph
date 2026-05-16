@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r --if-present build",
+    "dev": "pnpm --filter @glyph/web dev",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "tickets:create": "node scripts/create-issues.mjs",
