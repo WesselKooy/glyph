@@ -1,6 +1,12 @@
 import Link from "next/link";
 
+import { dailyLinkGridPuzzle } from "@/features/puzzle/fixtures/link-grid-puzzles";
+import { createRenderableLinkGridItems } from "@/features/puzzle/lib/link-grid";
+
 export default function PlayPage() {
+  const puzzle = dailyLinkGridPuzzle;
+  const puzzleItems = createRenderableLinkGridItems(puzzle);
+
   return (
     <div className="flex flex-1 flex-col gap-6 py-6">
       <header className="space-y-2">
@@ -12,13 +18,13 @@ export default function PlayPage() {
         </Link>
         <div className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            Puzzle placeholder
+            {puzzle.theme}
           </p>
           <h1 className="text-3xl font-semibold tracking-normal text-neutral-950">
-            Link Grid
+            {puzzle.title}
           </h1>
           <p className="text-base leading-7 text-neutral-700">
-            The playable grid will appear here in the next milestone ticket.
+            Find {puzzle.groups.length} hidden groups of {puzzle.groupSize}.
           </p>
         </div>
       </header>
@@ -27,12 +33,12 @@ export default function PlayPage() {
         className="grid grid-cols-3 gap-2 rounded-md border border-dashed border-neutral-300 bg-white/70 p-3"
         aria-label="Placeholder puzzle grid"
       >
-        {Array.from({ length: 12 }, (_, index) => (
+        {puzzleItems.map((item) => (
           <div
-            key={index}
+            key={item.id}
             className="flex aspect-square items-center justify-center rounded-md bg-emerald-50 text-sm font-semibold text-neutral-500"
           >
-            Tile
+            {item.text}
           </div>
         ))}
       </section>
