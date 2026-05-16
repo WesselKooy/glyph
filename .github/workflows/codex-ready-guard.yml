@@ -1,0 +1,60 @@
+name: Codex Ready Guard
+
+on:
+  issues:
+    types: [labeled, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  guard:
+    if: contains(github.event.issue.labels.*.name, 'codex-ready')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check issue body has required sections
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+
+            const required = [
+              "Context",
+              "Goal",
+              "Requirements",
+              "Out of scope",
+              "Acceptance criteria",
+              "Test plan"
+            ];
+
+            const hasSection = (section) => {
+              const escaped = section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              return new RegExp(`^#{2,3}\\s+${escaped}\\s*$`, "im").test(body);
+            };
+
+            const missing = required.filter(section => !hasSection(section));
+
+            if (missing.length > 0) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                name: "codex-ready"
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: [
+                  "Removed `codex-ready` because this issue is missing required sections:",
+                  "",
+                  ...missing.map(section => `- ## ${section}`),
+                  "",
+                  "Please complete the issue spec before marking it ready for Codex."
+                ].join("\n")
+              });
+
+              core.setFailed("Issue is missing required sections.");
+            }

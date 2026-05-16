@@ -1,0 +1,125 @@
+name: Codex Kickoff Comment
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: codex-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+
+jobs:
+  kickoff:
+    if: >
+      github.event.label.name == 'codex-ready' &&
+      !contains(github.event.issue.labels.*.name, 'codex-working') &&
+      !contains(github.event.issue.labels.*.name, 'risk:high')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate ready issue sections
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.issue.body || "";
+
+            const required = [
+              "Context",
+              "Goal",
+              "Requirements",
+              "Out of scope",
+              "Acceptance criteria",
+              "Test plan"
+            ];
+
+            const hasSection = (section) => {
+              const escaped = section.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+              return new RegExp(`^#{2,3}\\s+${escaped}\\s*$`, "im").test(body);
+            };
+
+            const missing = required.filter(section => !hasSection(section));
+
+            if (missing.length > 0) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                name: "codex-ready"
+              });
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                body: [
+                  "Codex did not start because this issue is missing required sections:",
+                  "",
+                  ...missing.map(section => `- ## ${section}`),
+                  "",
+                  "Please complete the issue spec before marking it ready for Codex."
+                ].join("\n")
+              });
+
+              core.setFailed("Issue is missing required sections.");
+            }
+
+      - name: Mark issue as codex-working
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.issue.labels.map(label => label.name);
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: ["codex-working"]
+            });
+
+            for (const label of ["needs-spec", "codex-ready"]) {
+              if (!labels.includes(label)) {
+                continue;
+              }
+
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                name: label
+              });
+            }
+
+      - name: Ask Codex to implement issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+
+            const body = [
+              "@codex implement this issue.",
+              "",
+              "Follow AGENTS.md.",
+              "Keep the change scoped to this issue only.",
+              "Open a PR when done.",
+              "Run typecheck, lint, tests, and build if configured.",
+              "Do not add dependencies unless necessary and explain why.",
+              "",
+              "Important:",
+              "- Do not implement unrelated features.",
+              "- Do not change the database schema unless explicitly required.",
+              "- Add tests for domain logic where relevant.",
+              "- Keep puzzle-solving logic out of React components.",
+              "- If the issue is unclear or unsafe to implement, stop and explain what needs clarification.",
+              "",
+              `Issue: #${issue.number} - ${issue.title}`
+            ].join("\n");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body
+            });
