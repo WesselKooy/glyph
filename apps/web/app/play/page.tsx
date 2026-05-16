@@ -1,11 +1,10 @@
 import Link from "next/link";
 
 import { dailyLinkGridPuzzle } from "@/features/puzzle/fixtures/link-grid-puzzles";
-import { createRenderableLinkGridItems } from "@/features/puzzle/lib/link-grid";
+import { PuzzleBoard } from "@/features/puzzle/components/PuzzleBoard";
 
 export default function PlayPage() {
   const puzzle = dailyLinkGridPuzzle;
-  const puzzleItems = createRenderableLinkGridItems(puzzle);
 
   return (
     <div className="flex flex-1 flex-col gap-6 py-6">
@@ -17,9 +16,14 @@ export default function PlayPage() {
           Back home
         </Link>
         <div className="space-y-3">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            {puzzle.theme}
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-sm bg-emerald-100 px-2 py-1 text-xs font-semibold uppercase text-emerald-900">
+              {puzzle.theme}
+            </span>
+            <span className="rounded-sm bg-neutral-200 px-2 py-1 text-xs font-semibold uppercase text-neutral-700">
+              {puzzle.difficulty}
+            </span>
+          </div>
           <h1 className="text-3xl font-semibold tracking-normal text-neutral-950">
             {puzzle.title}
           </h1>
@@ -29,19 +33,7 @@ export default function PlayPage() {
         </div>
       </header>
 
-      <section
-        className="grid grid-cols-3 gap-2 rounded-md border border-dashed border-neutral-300 bg-white/70 p-3"
-        aria-label="Placeholder puzzle grid"
-      >
-        {puzzleItems.map((item) => (
-          <div
-            key={item.id}
-            className="flex aspect-square items-center justify-center rounded-md bg-emerald-50 text-sm font-semibold text-neutral-500"
-          >
-            {item.text}
-          </div>
-        ))}
-      </section>
+      <PuzzleBoard puzzle={puzzle} />
     </div>
   );
 }
