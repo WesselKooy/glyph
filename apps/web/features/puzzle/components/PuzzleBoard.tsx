@@ -12,9 +12,10 @@ import { PuzzleTile } from "./PuzzleTile";
 
 type PuzzleBoardProps = {
   puzzle: LinkGridPuzzle;
+  onPlayAnother?: () => void;
 };
 
-export function PuzzleBoard({ puzzle }: PuzzleBoardProps) {
+export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
   const [shuffleCount, setShuffleCount] = useState(0);
   const [solvedGroupIds, setSolvedGroupIds] = useState<Set<string>>(
     () => new Set(),
@@ -264,6 +265,16 @@ export function PuzzleBoard({ puzzle }: PuzzleBoardProps) {
           </button>
         </div>
       </div>
+
+      {gameOver ? (
+        <PuzzleResult
+          groups={puzzle.groups}
+          hintsUsed={0}
+          mistakes={mistakes}
+          onPlayAnother={onPlayAnother}
+          solved={puzzleSolved}
+        />
+      ) : null}
     </section>
   );
 }
@@ -272,6 +283,85 @@ type GuessFeedback = {
   tone: "idle" | "correct" | "incorrect";
   message: string;
 };
+
+type PuzzleResultProps = {
+  groups: readonly LinkGridGroup[];
+  hintsUsed: number;
+  mistakes: number;
+  onPlayAnother?: () => void;
+  solved: boolean;
+};
+
+function PuzzleResult({
+  groups,
+  hintsUsed,
+  mistakes,
+  onPlayAnother,
+  solved,
+}: PuzzleResultProps) {
+  return (
+    <section
+      aria-labelledby="result-title"
+      className="space-y-4 rounded-md border border-neutral-200 bg-white/85 p-4 shadow-sm"
+    >
+      <div className="space-y-1">
+        <p className="text-sm font-semibold uppercase text-neutral-500">
+          Result
+        </p>
+        <h2 id="result-title" className="text-2xl font-semibold text-neutral-950">
+          {solved ? "Puzzle solved" : "Puzzle failed"}
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div className="rounded-md bg-neutral-100 px-3 py-2">
+          <span className="block text-xs font-semibold uppercase text-neutral-500">
+            Mistakes used
+          </span>
+          <span className="font-semibold text-neutral-950">{mistakes}</span>
+        </div>
+        <div className="rounded-md bg-neutral-100 px-3 py-2">
+          <span className="block text-xs font-semibold uppercase text-neutral-500">
+            Hints used
+          </span>
+          <span className="font-semibold text-neutral-950">{hintsUsed}</span>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-neutral-950">
+          Group explanations
+        </h3>
+        {groups.map((group) => (
+          <article
+            key={group.id}
+            className="rounded-md border border-neutral-200 bg-white px-3 py-3"
+          >
+            <h4 className="text-sm font-semibold text-neutral-950">
+              {group.label}
+            </h4>
+            <p className="mt-1 text-sm font-medium text-neutral-700">
+              {group.items.join(", ")}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-neutral-700">
+              {group.explanation}
+            </p>
+          </article>
+        ))}
+      </div>
+
+      {onPlayAnother ? (
+        <button
+          type="button"
+          onClick={onPlayAnother}
+          className="min-h-12 w-full rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
+        >
+          Play another
+        </button>
+      ) : null}
+    </section>
+  );
+}
 
 function findSolvedGroup(
   groups: readonly LinkGridGroup[],
