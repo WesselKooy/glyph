@@ -10,6 +10,28 @@ export function PuzzlePlay() {
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const puzzle = linkGridPuzzles[puzzleIndex];
 
+  if (!puzzle || !isPlayablePuzzle(puzzle)) {
+    return (
+      <div className="flex flex-1 flex-col justify-center gap-4 py-10">
+        <Link
+          href="/"
+          className="text-sm font-medium text-emerald-700 transition hover:text-emerald-900"
+        >
+          Back home
+        </Link>
+        <section className="rounded-md border border-neutral-200 bg-white/85 p-4 shadow-sm">
+          <h1 className="text-2xl font-semibold text-neutral-950">
+            No puzzle available
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-neutral-700">
+            The hardcoded puzzle fixture could not be loaded. Try again after a
+            complete puzzle has been added.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
   function playAnotherPuzzle() {
     setPuzzleIndex((currentPuzzleIndex) =>
       (currentPuzzleIndex + 1) % linkGridPuzzles.length,
@@ -17,7 +39,7 @@ export function PuzzlePlay() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 py-6">
+    <div className="flex flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-6">
       <header className="space-y-2">
         <Link
           href="/"
@@ -34,7 +56,7 @@ export function PuzzlePlay() {
               {puzzle.difficulty}
             </span>
           </div>
-          <h1 className="text-3xl font-semibold tracking-normal text-neutral-950">
+          <h1 className="text-3xl font-semibold leading-tight tracking-normal text-neutral-950">
             {puzzle.title}
           </h1>
           <p className="text-base leading-7 text-neutral-700">
@@ -49,5 +71,13 @@ export function PuzzlePlay() {
         onPlayAnother={playAnotherPuzzle}
       />
     </div>
+  );
+}
+
+function isPlayablePuzzle(puzzle: (typeof linkGridPuzzles)[number]): boolean {
+  return (
+    puzzle.groupSize > 0 &&
+    puzzle.groups.length > 0 &&
+    puzzle.groups.every((group) => group.items.length === puzzle.groupSize)
   );
 }
