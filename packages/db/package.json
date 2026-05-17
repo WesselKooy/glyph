@@ -18,8 +18,10 @@
     "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
     "migrate:status": "prisma migrate status --schema prisma/schema.prisma",
     "prebuild": "pnpm generate",
+    "preseed": "pnpm generate",
     "pretypecheck": "pnpm generate",
     "prisma": "prisma --schema prisma/schema.prisma",
+    "seed": "node prisma/seed.mjs",
     "studio": "prisma studio --schema prisma/schema.prisma",
     "typecheck": "tsc --noEmit",
     "validate": "prisma validate --schema prisma/schema.prisma"

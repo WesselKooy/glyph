@@ -10,7 +10,7 @@ Set `DATABASE_URL` before running Prisma commands. You can export it in your she
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/glyph?schema=public"
 ```
 
-The schema is intentionally empty for this setup ticket. Application models will be added in later database tickets.
+The schema contains the core Link Grid puzzle, gameplay, guess, and rating models.
 
 ## Commands
 
@@ -18,4 +18,5 @@ The schema is intentionally empty for this setup ticket. Application models will
 - `pnpm --filter @glyph/db migrate:dev`
 - `pnpm --filter @glyph/db migrate:deploy`
 - `pnpm --filter @glyph/db migrate:status`
+- `pnpm --filter @glyph/db seed`
 - `pnpm --filter @glyph/db studio`
