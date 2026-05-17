@@ -6,3 +6,153 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum PuzzleType {
+  LINK_GRID
+}
+
+enum PuzzleStatus {
+  DRAFT
+  READY_FOR_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PuzzleSource {
+  MANUAL
+  AI_GENERATED
+}
+
+enum PuzzleDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EVIL
+}
+
+enum PuzzleFairnessRating {
+  FAIR
+  AMBIGUOUS
+  WRONG
+}
+
+enum PuzzleDifficultyFeedback {
+  TOO_EASY
+  RIGHT
+  TOO_HARD
+}
+
+model Puzzle {
+  id           String           @id @default(uuid()) @db.Uuid
+  title        String
+  theme        String?
+  type         PuzzleType       @default(LINK_GRID)
+  status       PuzzleStatus     @default(DRAFT)
+  source       PuzzleSource     @default(MANUAL)
+  difficulty   PuzzleDifficulty
+  groupSize    Int              @default(4)
+  mistakeLimit Int              @default(4)
+  publishedAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  groups       PuzzleGroup[]
+  guesses      Guess[]
+  items        PuzzleItem[]
+  sessions     PlaySession[]
+  ratings      PuzzleRating[]
+
+  @@index([status, publishedAt])
+  @@index([type, difficulty])
+}
+
+model PuzzleGroup {
+  id          String       @id @default(uuid()) @db.Uuid
+  puzzleId    String       @db.Uuid
+  label       String
+  explanation String
+  gentleHint  String?
+  strongHint  String?
+  sortOrder   Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  puzzle      Puzzle       @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  items       PuzzleItem[]
+  guesses     Guess[]
+
+  @@unique([puzzleId, sortOrder])
+  @@index([puzzleId])
+}
+
+model PuzzleItem {
+  id        String      @id @default(uuid()) @db.Uuid
+  puzzleId  String      @db.Uuid
+  groupId   String      @db.Uuid
+  text      String
+  sortOrder Int
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  puzzle    Puzzle      @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  group     PuzzleGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, sortOrder])
+  @@unique([puzzleId, text])
+  @@index([puzzleId])
+  @@index([groupId])
+}
+
+model PlaySession {
+  id             String        @id @default(uuid()) @db.Uuid
+  puzzleId       String        @db.Uuid
+  itemOrderIds   String[]      @default([]) @db.Uuid
+  solvedGroupIds String[]      @default([]) @db.Uuid
+  mistakes       Int           @default(0)
+  hintsUsed      Int           @default(0)
+  solved         Boolean       @default(false)
+  failed         Boolean       @default(false)
+  startedAt      DateTime      @default(now())
+  completedAt    DateTime?
+  updatedAt      DateTime      @updatedAt
+  puzzle         Puzzle        @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  guesses        Guess[]
+  rating         PuzzleRating?
+
+  @@index([puzzleId])
+  @@index([completedAt])
+}
+
+model Guess {
+  id              String       @id @default(uuid()) @db.Uuid
+  playSessionId   String       @db.Uuid
+  puzzleId        String       @db.Uuid
+  matchedGroupId  String?      @db.Uuid
+  selectedItemIds String[]     @default([]) @db.Uuid
+  correct         Boolean
+  nearMiss        Boolean      @default(false)
+  mistakeNumber   Int?
+  createdAt       DateTime     @default(now())
+  playSession     PlaySession  @relation(fields: [playSessionId], references: [id], onDelete: Cascade)
+  puzzle          Puzzle       @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  matchedGroup    PuzzleGroup? @relation(fields: [matchedGroupId], references: [id], onDelete: SetNull)
+
+  @@index([playSessionId])
+  @@index([puzzleId])
+  @@index([matchedGroupId])
+}
+
+model PuzzleRating {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  puzzleId           String                   @db.Uuid
+  playSessionId      String?                  @unique @db.Uuid
+  fairness           PuzzleFairnessRating
+  difficultyFeedback PuzzleDifficultyFeedback
+  comment            String?
+  createdAt          DateTime                 @default(now())
+  puzzle             Puzzle                   @relation(fields: [puzzleId], references: [id], onDelete: Cascade)
+  playSession        PlaySession?             @relation(fields: [playSessionId], references: [id], onDelete: SetNull)
+
+  @@index([puzzleId])
+  @@index([fairness])
+  @@index([difficultyFeedback])
+}

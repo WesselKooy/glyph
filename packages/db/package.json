@@ -12,6 +12,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "format": "prisma format --schema prisma/schema.prisma",
     "generate": "prisma generate --schema prisma/schema.prisma",
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
@@ -20,7 +21,8 @@
     "pretypecheck": "pnpm generate",
     "prisma": "prisma --schema prisma/schema.prisma",
     "studio": "prisma studio --schema prisma/schema.prisma",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "validate": "prisma validate --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/client": "^6.17.0"
