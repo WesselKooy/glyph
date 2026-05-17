@@ -141,10 +141,13 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
             Puzzle grid
           </h2>
           <p className="text-sm text-neutral-600">
-            Select {puzzle.groupSize} tiles that belong together.
+            Select {puzzle.groupSize} tiles, then submit your group.
           </p>
         </div>
-        <p className="shrink-0 text-sm font-semibold text-emerald-800">
+        <p
+          className="shrink-0 text-sm font-semibold text-emerald-800"
+          aria-label={`${selectedCount} of ${puzzle.groupSize} tiles selected`}
+        >
           {selectedCount}/{puzzle.groupSize}
         </p>
       </div>
@@ -152,7 +155,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="rounded-md border border-neutral-200 bg-white/70 px-3 py-2">
           <span className="block text-xs font-semibold uppercase text-neutral-500">
-            Mistakes left
+            Mistakes remaining
           </span>
           <span className="font-semibold text-neutral-950">
             {Math.max(mistakesRemaining, 0)}/{puzzle.mistakesAllowed}
@@ -173,7 +176,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
           {solvedGroups.map((group) => (
             <div
               key={group.id}
-              className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3"
+              className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 shadow-sm motion-safe:animate-[solvedReveal_180ms_ease-out]"
             >
               <h3 className="text-sm font-semibold text-emerald-950">
                 {group.label}
@@ -189,6 +192,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
       <div
         className={`grid ${gridColumns} gap-2 rounded-md border border-neutral-200 bg-white/55 p-2 shadow-sm sm:gap-3 sm:p-3`}
         aria-label={`${itemCount} tile puzzle grid`}
+        aria-describedby="puzzle-feedback"
       >
         {puzzleItems.map((item) => (
           <PuzzleTile
@@ -205,6 +209,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
       </div>
 
       <p
+        id="puzzle-feedback"
         className={[
           "rounded-md border px-3 py-2 text-sm font-medium",
           feedback.tone === "correct"
@@ -213,7 +218,8 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
               ? "border-rose-200 bg-rose-50 text-rose-950"
               : "border-neutral-200 bg-white/70 text-neutral-700",
         ].join(" ")}
-        role={feedback.tone === "idle" ? undefined : "status"}
+        role="status"
+        aria-live="polite"
       >
         {feedback.message}
       </p>
@@ -231,7 +237,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
               : "cursor-not-allowed bg-neutral-200 text-neutral-500",
           ].join(" ")}
         >
-          Submit
+          Submit group
         </button>
 
         <div className="grid grid-cols-2 gap-2">
@@ -247,7 +253,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
                 : "cursor-not-allowed border-neutral-200 bg-white/55 text-neutral-400",
             ].join(" ")}
           >
-            Deselect all
+            Clear selection
           </button>
           <button
             type="button"
@@ -311,6 +317,11 @@ function PuzzleResult({
         <h2 id="result-title" className="text-2xl font-semibold text-neutral-950">
           {solved ? "Puzzle solved" : "Puzzle failed"}
         </h2>
+        <p className="text-sm leading-6 text-neutral-700">
+          {solved
+            ? "Nice solve. Here is why each group works."
+            : "No mistakes remaining. Review the groups and try another puzzle."}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
