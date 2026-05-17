@@ -2,6 +2,10 @@
   "name": "glyph",
   "private": true,
   "scripts": {
+    "api:build": "pnpm --filter @glyph/api build",
+    "api:dev": "pnpm --filter @glyph/api dev",
+    "api:lint": "pnpm --filter @glyph/api lint",
+    "api:typecheck": "pnpm --filter @glyph/api typecheck",
     "build": "pnpm -r --if-present build",
     "dev": "pnpm --filter @glyph/web dev",
     "lint": "pnpm -r --if-present lint",
