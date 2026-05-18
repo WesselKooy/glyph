@@ -2,60 +2,62 @@
 
 import { useMemo, useState } from "react";
 
+import { shuffleLinkGridPuzzleItems } from "../lib/link-grid";
 import {
-  createRenderableLinkGridItems,
-  flattenLinkGridPuzzleGroups,
-  type LinkGridGroup,
-  type LinkGridPuzzle,
-} from "../lib/link-grid";
+  submitPuzzleGuess,
+  type PlayablePuzzle,
+  type SolvedGroupDto,
+} from "../lib/puzzle-api";
 import { PuzzleTile } from "./PuzzleTile";
 
 type PuzzleBoardProps = {
-  puzzle: LinkGridPuzzle;
-  onPlayAnother?: () => void;
+  puzzle: PlayablePuzzle;
 };
 
-export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
+export function PuzzleBoard({ puzzle }: PuzzleBoardProps) {
   const [shuffleCount, setShuffleCount] = useState(0);
-  const [solvedGroupIds, setSolvedGroupIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  const [solvedGroups, setSolvedGroups] = useState<SolvedGroupDto[]>([]);
   const [mistakes, setMistakes] = useState(0);
+  const [mistakesRemaining, setMistakesRemaining] = useState(
+    puzzle.mistakesAllowed,
+  );
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<GuessFeedback>({
     tone: "idle",
     message: "Find a hidden group to begin.",
   });
-  const allPuzzleItems = useMemo(
-    () => flattenLinkGridPuzzleGroups(puzzle),
-    [puzzle],
+  const solvedItemIds = useMemo(
+    () =>
+      new Set(
+        solvedGroups.flatMap((group) => group.items.map((item) => item.id)),
+      ),
+    [solvedGroups],
   );
   const puzzleItems = useMemo(
     () =>
-      createRenderableLinkGridItems(puzzle, `${puzzle.id}:${shuffleCount}`).filter(
-        (item) => !solvedGroupIds.has(item.groupId),
-      ),
-    [puzzle, shuffleCount, solvedGroupIds],
+      shuffleLinkGridPuzzleItems(
+        puzzle.items,
+        `${puzzle.playSessionId}:${shuffleCount}`,
+      ).filter((item) => !solvedItemIds.has(item.id)),
+    [puzzle.items, puzzle.playSessionId, shuffleCount, solvedItemIds],
   );
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const solvedGroups = puzzle.groups.filter((group) => solvedGroupIds.has(group.id));
-  const unsolvedGroups = puzzle.groups.filter(
-    (group) => !solvedGroupIds.has(group.id),
-  );
   const itemCount = puzzleItems.length;
-  const totalItemCount = allPuzzleItems.length;
+  const totalItemCount = puzzle.items.length;
   const selectedCount = selectedItemIds.size;
-  const mistakesRemaining = puzzle.mistakesAllowed - mistakes;
-  const puzzleSolved = solvedGroupIds.size === puzzle.groups.length;
+  const totalGroupCount = Math.floor(totalItemCount / puzzle.groupSize);
+  const puzzleSolved = solvedGroups.length === totalGroupCount;
   const gameFailed = mistakesRemaining <= 0;
   const gameOver = puzzleSolved || gameFailed;
   const gridColumns = totalItemCount === 12 ? "grid-cols-3" : "grid-cols-4";
-  const isSubmitReady = selectedCount === puzzle.groupSize && !gameOver;
+  const isSubmitReady =
+    selectedCount === puzzle.groupSize && !gameOver && !submitting;
 
   function toggleItem(itemId: string) {
-    if (gameOver) {
+    if (gameOver || submitting) {
       return;
     }
 
@@ -90,44 +92,52 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
     setShuffleCount((currentShuffleCount) => currentShuffleCount + 1);
   }
 
-  function submitGuess() {
+  async function submitGuess() {
     if (!isSubmitReady) {
       return;
     }
 
     const selectedIds = [...selectedItemIds];
-    const solvedGroup = findSolvedGroup(unsolvedGroups, allPuzzleItems, selectedIds);
+    setSubmitting(true);
 
-    if (solvedGroup) {
-      const nextSolvedGroupIds = new Set(solvedGroupIds);
-      nextSolvedGroupIds.add(solvedGroup.id);
+    try {
+      const result = await submitPuzzleGuess(puzzle.playSessionId, selectedIds);
 
-      setSolvedGroupIds(nextSolvedGroupIds);
+      setMistakes(result.mistakes);
+      setMistakesRemaining(result.mistakesRemaining);
       setSelectedItemIds(new Set());
-      setFeedback({
-        tone: "correct",
-        message:
-          nextSolvedGroupIds.size === puzzle.groups.length
+
+      if (result.correct && result.group) {
+        const solvedGroup = result.group;
+
+        setSolvedGroups((currentSolvedGroups) => [
+          ...currentSolvedGroups,
+          solvedGroup,
+        ]);
+        setFeedback({
+          tone: "correct",
+          message: result.solved
             ? `Solved: ${solvedGroup.label}. Puzzle complete.`
             : `Correct: ${solvedGroup.label}.`,
+        });
+        return;
+      }
+
+      setFeedback({
+        tone: "incorrect",
+        message: result.message,
       });
-      return;
+    } catch (error) {
+      setFeedback({
+        tone: "incorrect",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The guess could not be submitted.",
+      });
+    } finally {
+      setSubmitting(false);
     }
-
-    const nextMistakes = mistakes + 1;
-    const nearMiss = hasOneAwayGroup(unsolvedGroups, allPuzzleItems, selectedIds);
-
-    setMistakes(nextMistakes);
-    setSelectedItemIds(new Set());
-    setFeedback({
-      tone: "incorrect",
-      message:
-        nextMistakes >= puzzle.mistakesAllowed
-          ? "No mistakes remaining. Puzzle failed."
-          : nearMiss
-            ? "One away."
-            : "Not quite.",
-    });
   }
 
   return (
@@ -166,7 +176,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
             Solved
           </span>
           <span className="font-semibold text-neutral-950">
-            {solvedGroupIds.size}/{puzzle.groups.length}
+            {solvedGroups.length}/{totalGroupCount}
           </span>
         </div>
       </div>
@@ -182,7 +192,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
                 {group.label}
               </h3>
               <p className="mt-1 text-sm text-emerald-900">
-                {group.items.join(", ")}
+                {group.items.map((item) => item.text).join(", ")}
               </p>
             </div>
           ))}
@@ -201,6 +211,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
             selected={selectedItemIds.has(item.id)}
             disabled={
               gameOver ||
+              submitting ||
               (selectedCount >= puzzle.groupSize && !selectedItemIds.has(item.id))
             }
             onToggle={toggleItem}
@@ -237,7 +248,7 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
               : "cursor-not-allowed bg-neutral-200 text-neutral-500",
           ].join(" ")}
         >
-          Submit group
+          {submitting ? "Checking..." : "Submit group"}
         </button>
 
         <div className="grid grid-cols-2 gap-2">
@@ -274,11 +285,11 @@ export function PuzzleBoard({ puzzle, onPlayAnother }: PuzzleBoardProps) {
 
       {gameOver ? (
         <PuzzleResult
-          groups={puzzle.groups}
+          completeGroupCount={totalGroupCount}
           hintsUsed={0}
           mistakes={mistakes}
-          onPlayAnother={onPlayAnother}
           solved={puzzleSolved}
+          solvedGroups={solvedGroups}
         />
       ) : null}
     </section>
@@ -291,19 +302,19 @@ type GuessFeedback = {
 };
 
 type PuzzleResultProps = {
-  groups: readonly LinkGridGroup[];
+  completeGroupCount: number;
   hintsUsed: number;
   mistakes: number;
-  onPlayAnother?: () => void;
   solved: boolean;
+  solvedGroups: readonly SolvedGroupDto[];
 };
 
 function PuzzleResult({
-  groups,
+  completeGroupCount,
   hintsUsed,
   mistakes,
-  onPlayAnother,
   solved,
+  solvedGroups,
 }: PuzzleResultProps) {
   return (
     <section
@@ -320,7 +331,7 @@ function PuzzleResult({
         <p className="text-sm leading-6 text-neutral-700">
           {solved
             ? "Nice solve. Here is why each group works."
-            : "No mistakes remaining. Review the groups and try another puzzle."}
+            : `No mistakes remaining. You found ${solvedGroups.length} of ${completeGroupCount} groups.`}
         </p>
       </div>
 
@@ -341,9 +352,9 @@ function PuzzleResult({
 
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-neutral-950">
-          Group explanations
+          {solved ? "Group explanations" : "Solved groups"}
         </h3>
-        {groups.map((group) => (
+        {solvedGroups.map((group) => (
           <article
             key={group.id}
             className="rounded-md border border-neutral-200 bg-white px-3 py-3"
@@ -352,67 +363,19 @@ function PuzzleResult({
               {group.label}
             </h4>
             <p className="mt-1 text-sm font-medium text-neutral-700">
-              {group.items.join(", ")}
+              {group.items.map((item) => item.text).join(", ")}
             </p>
             <p className="mt-2 text-sm leading-6 text-neutral-700">
               {group.explanation}
             </p>
           </article>
         ))}
+        {solvedGroups.length < completeGroupCount ? (
+          <p className="rounded-md border border-neutral-200 bg-white px-3 py-3 text-sm leading-6 text-neutral-700">
+            Full explanations appear after every group has been found.
+          </p>
+        ) : null}
       </div>
-
-      {onPlayAnother ? (
-        <button
-          type="button"
-          onClick={onPlayAnother}
-          className="min-h-12 w-full rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
-        >
-          Play another
-        </button>
-      ) : null}
     </section>
   );
-}
-
-function findSolvedGroup(
-  groups: readonly LinkGridGroup[],
-  items: ReturnType<typeof flattenLinkGridPuzzleGroups>,
-  selectedItemIds: readonly string[],
-): LinkGridGroup | undefined {
-  const selectedIdSet = new Set(selectedItemIds);
-
-  return groups.find((group) => {
-    const groupItemIds = getGroupItemIds(items, group.id);
-
-    return (
-      groupItemIds.length === selectedItemIds.length &&
-      groupItemIds.every((itemId) => selectedIdSet.has(itemId))
-    );
-  });
-}
-
-function hasOneAwayGroup(
-  groups: readonly LinkGridGroup[],
-  items: ReturnType<typeof flattenLinkGridPuzzleGroups>,
-  selectedItemIds: readonly string[],
-): boolean {
-  const selectedIdSet = new Set(selectedItemIds);
-
-  return groups.some((group) => {
-    const groupItemIds = getGroupItemIds(items, group.id);
-    const matchingItemCount = groupItemIds.filter((itemId) =>
-      selectedIdSet.has(itemId),
-    ).length;
-
-    return matchingItemCount === groupItemIds.length - 1;
-  });
-}
-
-function getGroupItemIds(
-  items: ReturnType<typeof flattenLinkGridPuzzleGroups>,
-  groupId: string,
-): string[] {
-  return items
-    .filter((item) => item.groupId === groupId)
-    .map((item) => item.id);
 }

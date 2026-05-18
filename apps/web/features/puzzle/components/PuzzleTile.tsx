@@ -1,7 +1,8 @@
-import type { LinkGridRenderableItem } from "../lib/link-grid";
-
 type PuzzleTileProps = {
-  item: LinkGridRenderableItem;
+  item: {
+    id: string;
+    text: string;
+  };
   selected?: boolean;
   disabled?: boolean;
   onToggle?: (itemId: string) => void;

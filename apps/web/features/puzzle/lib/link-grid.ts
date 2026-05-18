@@ -26,8 +26,6 @@ export type LinkGridPuzzle = {
 export type LinkGridRenderableItem = {
   id: string;
   puzzleId: string;
-  groupId: string;
-  groupLabel: string;
   text: string;
 };
 
@@ -38,11 +36,16 @@ export function flattenLinkGridPuzzleGroups(
     group.items.map((text, itemIndex) => ({
       id: `${puzzle.id}:${group.id}:${itemIndex}`,
       puzzleId: puzzle.id,
-      groupId: group.id,
-      groupLabel: group.label,
       text,
     })),
   );
+}
+
+export function shuffleLinkGridPuzzleItems<Item extends { id: string }>(
+  items: readonly Item[],
+  seed: string,
+): Item[] {
+  return shuffleLinkGridItems(items, seed);
 }
 
 export function createRenderableLinkGridItems(
@@ -52,10 +55,10 @@ export function createRenderableLinkGridItems(
   return shuffleLinkGridItems(flattenLinkGridPuzzleGroups(puzzle), seed);
 }
 
-function shuffleLinkGridItems(
-  items: readonly LinkGridRenderableItem[],
+function shuffleLinkGridItems<Item>(
+  items: readonly Item[],
   seed: string,
-): LinkGridRenderableItem[] {
+): Item[] {
   const shuffledItems = [...items];
   let randomState = hashSeed(seed);
 
