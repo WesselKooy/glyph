@@ -5,7 +5,10 @@ import { useMemo, useState } from "react";
 import { shuffleLinkGridPuzzleItems } from "../lib/link-grid";
 import {
   submitPuzzleGuess,
+  submitPuzzleRating,
   type PlayablePuzzle,
+  type PuzzleRatingDifficulty,
+  type PuzzleRatingFairness,
   type SolvedGroupDto,
 } from "../lib/puzzle-api";
 import { PuzzleTile } from "./PuzzleTile";
@@ -288,6 +291,7 @@ export function PuzzleBoard({ puzzle }: PuzzleBoardProps) {
           completeGroupCount={totalGroupCount}
           hintsUsed={0}
           mistakes={mistakes}
+          puzzleId={puzzle.id}
           solved={puzzleSolved}
           solvedGroups={solvedGroups}
         />
@@ -305,6 +309,7 @@ type PuzzleResultProps = {
   completeGroupCount: number;
   hintsUsed: number;
   mistakes: number;
+  puzzleId: string;
   solved: boolean;
   solvedGroups: readonly SolvedGroupDto[];
 };
@@ -313,6 +318,7 @@ function PuzzleResult({
   completeGroupCount,
   hintsUsed,
   mistakes,
+  puzzleId,
   solved,
   solvedGroups,
 }: PuzzleResultProps) {
@@ -376,6 +382,196 @@ function PuzzleResult({
           </p>
         ) : null}
       </div>
+
+      <PuzzleRatingForm puzzleId={puzzleId} />
     </section>
+  );
+}
+
+type RatingSubmitState =
+  | {
+      status: "idle";
+    }
+  | {
+      status: "submitting";
+    }
+  | {
+      status: "submitted";
+    }
+  | {
+      status: "error";
+      message: string;
+    };
+
+const fairnessOptions = [
+  { value: "fair", label: "Fair" },
+  { value: "ambiguous", label: "Ambiguous" },
+  { value: "wrong", label: "Wrong" },
+] satisfies Array<{ value: PuzzleRatingFairness; label: string }>;
+
+const difficultyOptions = [
+  { value: "too_easy", label: "Too easy" },
+  { value: "right", label: "Right" },
+  { value: "too_hard", label: "Too hard" },
+] satisfies Array<{ value: PuzzleRatingDifficulty; label: string }>;
+
+function PuzzleRatingForm({ puzzleId }: { puzzleId: string }) {
+  const [fairness, setFairness] = useState<PuzzleRatingFairness>("fair");
+  const [difficulty, setDifficulty] = useState<PuzzleRatingDifficulty>("right");
+  const [comment, setComment] = useState("");
+  const [submitState, setSubmitState] = useState<RatingSubmitState>({
+    status: "idle",
+  });
+
+  const submitted = submitState.status === "submitted";
+  const submitting = submitState.status === "submitting";
+
+  async function submitRating() {
+    if (submitting || submitted) {
+      return;
+    }
+
+    setSubmitState({ status: "submitting" });
+
+    try {
+      await submitPuzzleRating(puzzleId, {
+        fairness,
+        difficulty,
+        comment: comment.trim() || undefined,
+      });
+      setSubmitState({ status: "submitted" });
+    } catch (error) {
+      setSubmitState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "The rating could not be submitted.",
+      });
+    }
+  }
+
+  return (
+    <section
+      aria-labelledby="rating-title"
+      className="space-y-3 rounded-md border border-neutral-200 bg-white px-3 py-3"
+    >
+      <div>
+        <h3 id="rating-title" className="text-sm font-semibold text-neutral-950">
+          Rate this puzzle
+        </h3>
+        <p className="mt-1 text-sm leading-6 text-neutral-700">
+          Was it fair, and did the difficulty feel right?
+        </p>
+      </div>
+
+      <fieldset className="space-y-2" disabled={submitting || submitted}>
+        <legend className="text-xs font-semibold uppercase text-neutral-500">
+          Fairness
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {fairnessOptions.map((option) => (
+            <RatingOptionButton
+              key={option.value}
+              label={option.label}
+              selected={fairness === option.value}
+              onSelect={() => setFairness(option.value)}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="space-y-2" disabled={submitting || submitted}>
+        <legend className="text-xs font-semibold uppercase text-neutral-500">
+          Difficulty
+        </legend>
+        <div className="grid grid-cols-3 gap-2">
+          {difficultyOptions.map((option) => (
+            <RatingOptionButton
+              key={option.value}
+              label={option.label}
+              selected={difficulty === option.value}
+              onSelect={() => setDifficulty(option.value)}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <label className="block space-y-2">
+        <span className="text-xs font-semibold uppercase text-neutral-500">
+          Comment
+        </span>
+        <textarea
+          value={comment}
+          disabled={submitting || submitted}
+          onChange={(event) => setComment(event.target.value)}
+          rows={3}
+          maxLength={500}
+          placeholder="Optional note for puzzle review"
+          className="w-full resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm leading-6 text-neutral-900 shadow-sm transition placeholder:text-neutral-400 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 disabled:cursor-not-allowed disabled:bg-neutral-100 disabled:text-neutral-500"
+        />
+      </label>
+
+      <button
+        type="button"
+        disabled={submitting || submitted}
+        onClick={submitRating}
+        className={[
+          "min-h-11 w-full rounded-md px-4 text-sm font-semibold shadow-sm transition",
+          "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800",
+          submitting || submitted
+            ? "cursor-not-allowed bg-neutral-200 text-neutral-500"
+            : "bg-emerald-800 text-white hover:bg-emerald-700",
+        ].join(" ")}
+      >
+        {submitted ? "Rating recorded" : submitting ? "Submitting..." : "Submit rating"}
+      </button>
+
+      {submitState.status === "error" ? (
+        <p
+          className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-950"
+          role="status"
+        >
+          {submitState.message}
+        </p>
+      ) : null}
+      {submitted ? (
+        <p
+          className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-950"
+          role="status"
+        >
+          Thanks. Your rating helps review future puzzles.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+type RatingOptionButtonProps = {
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+};
+
+function RatingOptionButton({
+  label,
+  selected,
+  onSelect,
+}: RatingOptionButtonProps) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onSelect}
+      className={[
+        "min-h-10 rounded-md border px-2 text-sm font-semibold transition",
+        "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800",
+        selected
+          ? "border-emerald-800 bg-emerald-50 text-emerald-950"
+          : "border-neutral-300 bg-white text-neutral-700 hover:border-emerald-700 hover:bg-emerald-50",
+      ].join(" ")}
+    >
+      {label}
+    </button>
   );
 }

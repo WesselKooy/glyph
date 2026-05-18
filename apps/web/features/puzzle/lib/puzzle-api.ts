@@ -47,6 +47,20 @@ export type GuessResponseDto = {
   message: string;
 };
 
+export type PuzzleRatingFairness = "fair" | "ambiguous" | "wrong";
+
+export type PuzzleRatingDifficulty = "too_easy" | "right" | "too_hard";
+
+export type PuzzleRatingResponseDto = {
+  id: string;
+  puzzleId: string;
+  fairness: PuzzleRatingFairness;
+  difficulty: PuzzleRatingDifficulty;
+  comment: string | null;
+  recorded: true;
+  createdAt: string;
+};
+
 export type PlayablePuzzle = Omit<PuzzleResponseDto, "items"> & {
   items: PuzzleItemDto[];
   playSessionId: string;
@@ -73,6 +87,20 @@ export async function submitPuzzleGuess(
   return fetchApi<GuessResponseDto>(`/play-sessions/${playSessionId}/guess`, {
     method: "POST",
     body: JSON.stringify({ selectedItemIds }),
+  });
+}
+
+export async function submitPuzzleRating(
+  puzzleId: string,
+  rating: {
+    fairness: PuzzleRatingFairness;
+    difficulty: PuzzleRatingDifficulty;
+    comment?: string;
+  },
+): Promise<PuzzleRatingResponseDto> {
+  return fetchApi<PuzzleRatingResponseDto>(`/puzzles/${puzzleId}/rating`, {
+    method: "POST",
+    body: JSON.stringify(rating),
   });
 }
 
