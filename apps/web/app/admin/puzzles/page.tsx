@@ -30,6 +30,12 @@ export default async function AdminPuzzlesPage() {
             Internal review queue for Link Grid puzzle candidates.
           </p>
         </div>
+        <Link
+          href="/admin/puzzles/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-emerald-800 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-800"
+        >
+          Create puzzle
+        </Link>
       </header>
 
       {puzzles.length > 0 ? (

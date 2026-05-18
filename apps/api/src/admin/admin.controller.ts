@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { AdminService } from "./admin.service";
+import { type CreateAdminPuzzleRequestDto } from "./dto/create-admin-puzzle-request.dto";
 import { type AdminPuzzleDetailResponseDto } from "./dto/admin-puzzle-detail-response.dto";
 import { type AdminPuzzleListResponseDto } from "./dto/admin-puzzle-list-response.dto";
 
@@ -10,6 +11,13 @@ export class AdminController {
   @Get("puzzles")
   async listPuzzles(): Promise<AdminPuzzleListResponseDto> {
     return this.adminService.listPuzzles();
+  }
+
+  @Post("puzzles")
+  async createPuzzle(
+    @Body() body: CreateAdminPuzzleRequestDto,
+  ): Promise<AdminPuzzleDetailResponseDto> {
+    return this.adminService.createPuzzle(body);
   }
 
   @Get("puzzles/:id")
