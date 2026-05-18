@@ -14,8 +14,75 @@ export type AdminPuzzleListResponse = {
   puzzles: AdminPuzzleListItem[];
 };
 
+export type AdminPuzzleDetailItem = {
+  id: string;
+  text: string;
+  sortOrder: number;
+};
+
+export type AdminPuzzleDetailGroup = {
+  id: string;
+  label: string;
+  explanation: string;
+  gentleHint: string | null;
+  strongHint: string | null;
+  sortOrder: number;
+  items: AdminPuzzleDetailItem[];
+};
+
+export type AdminPuzzleRatingSummary = {
+  total: number;
+  fairness: {
+    fair: number;
+    ambiguous: number;
+    wrong: number;
+  };
+  difficulty: {
+    tooEasy: number;
+    right: number;
+    tooHard: number;
+  };
+  recent: AdminPuzzleRecentRating[];
+};
+
+export type AdminPuzzleRecentRating = {
+  id: string;
+  fairness: string;
+  difficulty: string;
+  comment: string | null;
+  createdAt: string;
+};
+
+export type AdminPuzzleValidationRuns = {
+  status: "not_configured";
+  runs: [];
+};
+
+export type AdminPuzzleDetail = {
+  id: string;
+  title: string;
+  theme: string | null;
+  difficulty: string;
+  status: string;
+  source: string;
+  qualityScore: number | null;
+  groupSize: number;
+  mistakeLimit: number;
+  createdAt: string;
+  publishedAt: string | null;
+  groups: AdminPuzzleDetailGroup[];
+  ratings: AdminPuzzleRatingSummary;
+  validationRuns: AdminPuzzleValidationRuns;
+};
+
 export async function fetchAdminPuzzles(): Promise<AdminPuzzleListResponse> {
   return fetchApi<AdminPuzzleListResponse>("/admin/puzzles");
+}
+
+export async function fetchAdminPuzzle(
+  puzzleId: string,
+): Promise<AdminPuzzleDetail> {
+  return fetchApi<AdminPuzzleDetail>(`/admin/puzzles/${puzzleId}`);
 }
 
 function getApiBaseUrl(): string {
