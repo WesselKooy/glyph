@@ -75,6 +75,27 @@ export type AdminPuzzleDetail = {
   validationRuns: AdminPuzzleValidationRuns;
 };
 
+export type CreateAdminPuzzleItemInput = {
+  text: string;
+};
+
+export type CreateAdminPuzzleGroupInput = {
+  label: string;
+  explanation: string;
+  gentleHint: string;
+  strongHint: string;
+  items: CreateAdminPuzzleItemInput[];
+};
+
+export type CreateAdminPuzzleInput = {
+  title: string;
+  theme: string;
+  difficulty: "easy" | "medium" | "hard" | "evil";
+  groupSize: 4;
+  mistakeLimit: number;
+  groups: CreateAdminPuzzleGroupInput[];
+};
+
 export async function fetchAdminPuzzles(): Promise<AdminPuzzleListResponse> {
   return fetchApi<AdminPuzzleListResponse>("/admin/puzzles");
 }
@@ -85,6 +106,15 @@ export async function fetchAdminPuzzle(
   return fetchApi<AdminPuzzleDetail>(`/admin/puzzles/${puzzleId}`);
 }
 
+export async function createAdminPuzzle(
+  puzzle: CreateAdminPuzzleInput,
+): Promise<AdminPuzzleDetail> {
+  return fetchApi<AdminPuzzleDetail>("/admin/puzzles", {
+    method: "POST",
+    body: JSON.stringify(puzzle),
+  });
+}
+
 function getApiBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??
@@ -92,11 +122,16 @@ function getApiBaseUrl(): string {
   );
 }
 
-async function fetchApi<ResponseBody>(path: string): Promise<ResponseBody> {
+async function fetchApi<ResponseBody>(
+  path: string,
+  init?: RequestInit,
+): Promise<ResponseBody> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
+      ...init?.headers,
     },
   });
 
