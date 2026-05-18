@@ -6,6 +6,8 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "nest start --watch",
     "lint": "eslint src --max-warnings=0",
+    "prebuild": "pnpm --filter @glyph/db generate",
+    "pretypecheck": "pnpm --filter @glyph/db generate",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit"
   },
@@ -14,6 +16,7 @@
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@prisma/client": "^6.17.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
