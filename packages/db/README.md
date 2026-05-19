@@ -12,6 +12,8 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/glyph?schema=public"
 
 The schema contains the core Link Grid puzzle, gameplay, guess, and rating models.
 
+For full local web plus API testing, see `docs/local-development.md`.
+
 ## Commands
 
 - `pnpm --filter @glyph/db generate`
