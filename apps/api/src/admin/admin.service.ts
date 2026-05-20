@@ -155,6 +155,88 @@ export class AdminService {
 
     return toAdminPuzzleDetailDto(puzzle);
   }
+
+  async approvePuzzle(puzzleId: string): Promise<AdminPuzzleDetailResponseDto> {
+    const puzzle = await this.findPuzzleStatus(puzzleId);
+
+    if (!canApprovePuzzleStatus(puzzle.status)) {
+      throw new BadRequestException(
+        `Puzzle ${puzzleId} cannot be approved from ${puzzle.status.toLowerCase()} status.`,
+      );
+    }
+
+    const updatedPuzzle = await this.prisma.puzzle.update({
+      where: { id: puzzleId },
+      data: {
+        status: PuzzleStatus.APPROVED,
+        publishedAt: null,
+      },
+      select: adminPuzzleDetailSelect,
+    });
+
+    return toAdminPuzzleDetailDto(updatedPuzzle);
+  }
+
+  async rejectPuzzle(puzzleId: string): Promise<AdminPuzzleDetailResponseDto> {
+    const puzzle = await this.findPuzzleStatus(puzzleId);
+
+    if (puzzle.status === PuzzleStatus.ARCHIVED) {
+      throw new BadRequestException(
+        `Puzzle ${puzzleId} cannot be rejected from archived status.`,
+      );
+    }
+
+    const updatedPuzzle = await this.prisma.puzzle.update({
+      where: { id: puzzleId },
+      data: {
+        status: PuzzleStatus.REJECTED,
+        // Rejected puzzles are intentionally unpublished immediately.
+        publishedAt: null,
+      },
+      select: adminPuzzleDetailSelect,
+    });
+
+    return toAdminPuzzleDetailDto(updatedPuzzle);
+  }
+
+  async publishPuzzle(puzzleId: string): Promise<AdminPuzzleDetailResponseDto> {
+    const puzzle = await this.findPuzzleStatus(puzzleId);
+
+    if (puzzle.status !== PuzzleStatus.APPROVED) {
+      throw new BadRequestException(
+        `Puzzle ${puzzleId} cannot be published from ${puzzle.status.toLowerCase()} status.`,
+      );
+    }
+
+    const updatedPuzzle = await this.prisma.puzzle.update({
+      where: { id: puzzleId },
+      data: {
+        status: PuzzleStatus.PUBLISHED,
+        publishedAt: new Date(),
+      },
+      select: adminPuzzleDetailSelect,
+    });
+
+    return toAdminPuzzleDetailDto(updatedPuzzle);
+  }
+
+  private async findPuzzleStatus(
+    puzzleId: string,
+  ): Promise<{ id: string; status: PuzzleStatus }> {
+    const puzzle = await this.prisma.puzzle.findUnique({
+      where: { id: puzzleId },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!puzzle) {
+      throw new NotFoundException(`Puzzle ${puzzleId} was not found.`);
+    }
+
+    return puzzle;
+  }
 }
 
 type CreatePuzzleInput = {
@@ -381,6 +463,14 @@ function validateUniqueItemTexts(groups: CreatePuzzleGroupInput[]): void {
       seenTexts.add(normalizedText);
     }
   }
+}
+
+function canApprovePuzzleStatus(status: PuzzleStatus): boolean {
+  return (
+    status === PuzzleStatus.DRAFT ||
+    status === PuzzleStatus.READY_FOR_REVIEW ||
+    status === PuzzleStatus.REJECTED
+  );
 }
 
 function toAdminPuzzleListItemDto(puzzle: AdminPuzzleListItem) {

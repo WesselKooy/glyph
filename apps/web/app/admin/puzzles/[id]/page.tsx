@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AdminPuzzleActions } from "@/features/admin/components/AdminPuzzleActions";
 import {
   fetchAdminPuzzle,
   type AdminPuzzleDetail,
@@ -58,6 +59,7 @@ export default async function AdminPuzzleDetailPage({
       </header>
 
       <PuzzleMetadata puzzle={puzzle} />
+      <AdminPuzzleActions puzzleId={puzzle.id} status={puzzle.status} />
       <PuzzleGroups groups={puzzle.groups} />
       <ValidationRuns />
       <RatingsSummary ratings={puzzle.ratings} />

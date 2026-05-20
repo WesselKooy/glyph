@@ -115,6 +115,33 @@ export async function createAdminPuzzle(
   });
 }
 
+export async function approveAdminPuzzle(
+  puzzleId: string,
+): Promise<AdminPuzzleDetail> {
+  return mutateAdminPuzzleStatus(puzzleId, "approve");
+}
+
+export async function rejectAdminPuzzle(
+  puzzleId: string,
+): Promise<AdminPuzzleDetail> {
+  return mutateAdminPuzzleStatus(puzzleId, "reject");
+}
+
+export async function publishAdminPuzzle(
+  puzzleId: string,
+): Promise<AdminPuzzleDetail> {
+  return mutateAdminPuzzleStatus(puzzleId, "publish");
+}
+
+function mutateAdminPuzzleStatus(
+  puzzleId: string,
+  action: "approve" | "reject" | "publish",
+): Promise<AdminPuzzleDetail> {
+  return fetchApi<AdminPuzzleDetail>(`/admin/puzzles/${puzzleId}/${action}`, {
+    method: "POST",
+  });
+}
+
 function getApiBaseUrl(): string {
   return (
     process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ??

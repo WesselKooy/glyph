@@ -26,4 +26,25 @@ export class AdminController {
   ): Promise<AdminPuzzleDetailResponseDto> {
     return this.adminService.getPuzzle(puzzleId);
   }
+
+  @Post("puzzles/:id/approve")
+  async approvePuzzle(
+    @Param("id") puzzleId: string,
+  ): Promise<AdminPuzzleDetailResponseDto> {
+    return this.adminService.approvePuzzle(puzzleId);
+  }
+
+  @Post("puzzles/:id/reject")
+  async rejectPuzzle(
+    @Param("id") puzzleId: string,
+  ): Promise<AdminPuzzleDetailResponseDto> {
+    return this.adminService.rejectPuzzle(puzzleId);
+  }
+
+  @Post("puzzles/:id/publish")
+  async publishPuzzle(
+    @Param("id") puzzleId: string,
+  ): Promise<AdminPuzzleDetailResponseDto> {
+    return this.adminService.publishPuzzle(puzzleId);
+  }
 }
