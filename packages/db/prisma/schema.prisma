@@ -44,27 +44,63 @@ enum PuzzleDifficultyFeedback {
   TOO_HARD
 }
 
+enum GenerationJobStatus {
+  QUEUED
+  GENERATING
+  PARSING
+  VALIDATING_STRUCTURE
+  VALIDATING_AMBIGUITY
+  SIMULATING_SOLVERS
+  REPAIRING
+  REJECTED
+  READY_FOR_REVIEW
+  APPROVED
+  PUBLISHED
+  FAILED
+}
+
 model Puzzle {
-  id           String           @id @default(uuid()) @db.Uuid
-  title        String
-  theme        String?
-  type         PuzzleType       @default(LINK_GRID)
-  status       PuzzleStatus     @default(DRAFT)
-  source       PuzzleSource     @default(MANUAL)
-  difficulty   PuzzleDifficulty
-  groupSize    Int              @default(4)
-  mistakeLimit Int              @default(4)
-  publishedAt  DateTime?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  groups       PuzzleGroup[]
-  guesses      Guess[]
-  items        PuzzleItem[]
-  sessions     PlaySession[]
-  ratings      PuzzleRating[]
+  id             String           @id @default(uuid()) @db.Uuid
+  title          String
+  theme          String?
+  type           PuzzleType       @default(LINK_GRID)
+  status         PuzzleStatus     @default(DRAFT)
+  source         PuzzleSource     @default(MANUAL)
+  difficulty     PuzzleDifficulty
+  groupSize      Int              @default(4)
+  mistakeLimit   Int              @default(4)
+  publishedAt    DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  groups         PuzzleGroup[]
+  guesses        Guess[]
+  items          PuzzleItem[]
+  sessions       PlaySession[]
+  ratings        PuzzleRating[]
+  generationJobs GenerationJob[]
 
   @@index([status, publishedAt])
   @@index([type, difficulty])
+}
+
+model GenerationJob {
+  id            String              @id @default(uuid()) @db.Uuid
+  status        GenerationJobStatus @default(QUEUED)
+  topic         String
+  difficulty    PuzzleDifficulty
+  promptVersion String
+  model         String
+  rawOutput     Json?
+  parsedOutput  Json?
+  error         String?
+  puzzleId      String?             @db.Uuid
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  puzzle        Puzzle?             @relation(fields: [puzzleId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([puzzleId])
 }
 
 model PuzzleGroup {
