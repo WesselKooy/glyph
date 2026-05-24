@@ -16,6 +16,8 @@
     "db:studio": "pnpm --filter @glyph/db studio",
     "db:up": "docker compose up -d postgres",
     "dev": "pnpm --filter @glyph/web dev",
+    "jobs:dev": "pnpm --filter @glyph/jobs dev",
+    "jobs:typecheck": "pnpm --filter @glyph/jobs typecheck",
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "tickets:create": "node scripts/create-issues.mjs",
